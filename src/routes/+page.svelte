@@ -10,30 +10,19 @@
   let selectedVillage = $state('');
   
   let allData = $state([]);
-  let activeTab = $state('geojson'); // 'geojson' atau 'gpx'
-  let filteredData = $state([]); // Data yang difilter berdasarkan pilihan
+  let activeTab = $state('geojson');
+  let filteredData = $state([]);
   let isLoading = $state(false);
-  let showResults = $state(false); // State untuk toggle hasil
+  let showResults = $state(false);
 
-  let geoJSONLayer = $state(null);
-
-  /**
-   * Mengambil data dari file GeoJSON
-   * @returns {Promise<void>}
-   */
   async function loadData() {
     isLoading = true;
     try {
-      //  ini manggil geojson dari file hosting, karena filenya besar
-      //  file hostingnya berbeda server dengan projek kita ini
       const response = await fetch('https://drive.indramayukab.my.id/indonesia_villages_border.geojson');
       allData = await response.json();
       
       if (Array.isArray(allData)) {
-        // Mengambil nama provinsi unik
         provinces = [...new Set(allData.map(item => item.province))].sort((a, b) => a.localeCompare(b, 'id'));
-      } else {
-        console.error('Data tidak dalam format yang diharapkan');
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -41,20 +30,13 @@
     isLoading = false;
   }
 
-  /**
-   * Memperbarui daftar district berdasarkan provinsi yang dipilih
-   */
   async function updateDistricts() {
     isLoading = true;
     if (selectedProvince) {
-      try {
-        districts = [...new Set(allData
-          .filter(item => item.province === selectedProvince)
-          .map(item => item.district))]
-          .sort((a, b) => a.localeCompare(b, 'id'));
-      } catch (error) {
-        console.error('Error updating districts:', error);
-      }
+      districts = [...new Set(allData
+        .filter(item => item.province === selectedProvince)
+        .map(item => item.district))]
+        .sort((a, b) => a.localeCompare(b, 'id'));
     } else {
       districts = [];
     }
@@ -66,20 +48,13 @@
     isLoading = false;
   }
 
-  /**
-   * Memperbarui daftar sub_district berdasarkan district yang dipilih
-   */
   async function updateSubDistricts() {
     isLoading = true;
     if (selectedDistrict) {
-      try {
-        subDistricts = [...new Set(allData
-          .filter(item => item.province === selectedProvince && item.district === selectedDistrict)
-          .map(item => item.sub_district))]
-          .sort((a, b) => a.localeCompare(b, 'id'));
-      } catch (error) {
-        console.error('Error updating sub districts:', error);
-      }
+      subDistricts = [...new Set(allData
+        .filter(item => item.province === selectedProvince && item.district === selectedDistrict)
+        .map(item => item.sub_district))]
+        .sort((a, b) => a.localeCompare(b, 'id'));
     } else {
       subDistricts = [];
     }
@@ -90,23 +65,16 @@
     isLoading = false;
   }
 
-  /**
-   * Memperbarui daftar village berdasarkan sub_district yang dipilih
-   */
   async function updateVillages() {
     isLoading = true;
     if (selectedSubDistrict) {
-      try {
-        villages = [...new Set(allData
-          .filter(item => 
-            item.province === selectedProvince && 
-            item.district === selectedDistrict && 
-            item.sub_district === selectedSubDistrict)
-          .map(item => item.village))]
-          .sort((a, b) => a.localeCompare(b, 'id'));
-      } catch (error) {
-        console.error('Error updating villages:', error);
-      }
+      villages = [...new Set(allData
+        .filter(item => 
+          item.province === selectedProvince && 
+          item.district === selectedDistrict && 
+          item.sub_district === selectedSubDistrict)
+        .map(item => item.village))]
+        .sort((a, b) => a.localeCompare(b, 'id'));
     } else {
       villages = [];
     }
@@ -115,52 +83,19 @@
     isLoading = false;
   }
 
-  /**
-   * Memperbarui data yang difilter berdasarkan pilihan
-   */
   async function updateFilteredData() {
     if (selectedDistrict) {
-      try {
-        filteredData = allData.filter(item => 
-          item.province === selectedProvince && 
-          item.district === selectedDistrict &&
-          (!selectedSubDistrict || item.sub_district === selectedSubDistrict) &&
-          (!selectedVillage || item.village === selectedVillage)
-        );
-
-        // Update GeoJSON layer jika ada data
-        if (filteredData.length > 0) {
-          const geoJSONData = {
-            type: 'FeatureCollection',
-            features: filteredData.map(item => ({
-              type: 'Feature',
-              properties: {
-                name: `${item.province} - ${item.district} - ${item.sub_district} - ${item.village}`
-              },
-              geometry: {
-                type: 'Polygon',
-                coordinates: [item.border]
-              }
-            }))
-          };
-          
-          geoJSONLayer = geoJSONData;
-        } else {
-          geoJSONLayer = null;
-        }
-      } catch (error) {
-        console.error('Error updating filtered data:', error);
-      }
+      filteredData = allData.filter(item => 
+        item.province === selectedProvince && 
+        item.district === selectedDistrict &&
+        (!selectedSubDistrict || item.sub_district === selectedSubDistrict) &&
+        (!selectedVillage || item.village === selectedVillage)
+      );
     } else {
       filteredData = [];
-      geoJSONLayer = null;
     }
   }
 
-  /**
-   * Mengkonversi GeoJSON ke GPX
-   * @returns {string} GPX string
-   */
   function convertToGPX() {
     if (filteredData.length === 0) return '';
     
@@ -199,9 +134,6 @@
     return gpx;
   }
 
-  /**
-   * Mendapatkan nama lokasi berdasarkan pilihan
-   */
   function getLocationName() {
     let name = `${selectedProvince} - ${selectedDistrict}`;
     if (selectedSubDistrict) name += ` - ${selectedSubDistrict}`;
@@ -209,9 +141,6 @@
     return name;
   }
 
-  /**
-   * Download data dalam format yang dipilih
-   */
   function downloadData() {
     if (filteredData.length === 0) return;
     
@@ -233,10 +162,7 @@
     linkElement.click();
   }
 
-  // Memuat data saat komponen dimuat
   loadData();
-
-  $inspect(isLoading).with(console.trace);
 </script>
 
 <div>
@@ -310,22 +236,20 @@
         Jumlah data: {filteredData.length} {filteredData.length > 1 ? 'lokasi' : 'lokasi'}
       </p>
       <div class="button-group">
-        <!-- <div class="format-tabs"> -->
-          <button 
-            class="tab-btn {activeTab === 'geojson' ? 'active' : ''}" 
-            on:click={() => activeTab = 'geojson'}
-            disabled={isLoading}
-          >
-            GeoJSON
-          </button>
-          <button 
-            class="tab-btn {activeTab === 'gpx' ? 'active' : ''}" 
-            on:click={() => activeTab = 'gpx'}
-            disabled={isLoading}
-          >
-            GPX
-          </button>
-        <!-- </div> -->
+        <button 
+          class="tab-btn {activeTab === 'geojson' ? 'active' : ''}" 
+          on:click={() => activeTab = 'geojson'}
+          disabled={isLoading}
+        >
+          GeoJSON
+        </button>
+        <button 
+          class="tab-btn {activeTab === 'gpx' ? 'active' : ''}" 
+          on:click={() => activeTab = 'gpx'}
+          disabled={isLoading}
+        >
+          GPX
+        </button>
         <button on:click={downloadData} class="download-btn" disabled={isLoading}>
           Download
         </button>
@@ -340,11 +264,7 @@
     </div>
   {/if}
 
-<!-- peta  -->
-
   {#if filteredData.length > 0 && showResults}
-
-
     <div class="data-preview">
       <h2>Data {activeTab.toUpperCase()}:</h2>
       <pre>
@@ -419,12 +339,6 @@
     cursor: not-allowed;
   }
 
-  .format-tabs {
-    margin-top: 2rem;
-    display: flex;
-    gap: 1rem;
-  }
-
   .tab-btn {
     padding: 0.5rem 1rem;
     background-color: #f0f0f0;
@@ -485,17 +399,5 @@
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-  }
-
-  .map-container {
-    margin: 1rem 0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  :global(.leaflet-container) {
-    width: 100%;
-    height: 100%;
   }
 </style>
