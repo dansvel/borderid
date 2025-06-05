@@ -1,2 +1,3 @@
 name = "borderid"
+project_name = "borderid"
 pages_build_output_dir = "./build"
